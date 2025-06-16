@@ -22,7 +22,7 @@ const server = http.createServer((req, res) => {
     const method = req.method;
 
     if (pathname === '/') {
-        pathname = '/HTML/index.html';
+        pathname = '/HTML/home.html';
     }
 
     const isApiRequest = !path.extname(pathname);
