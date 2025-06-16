@@ -7,3 +7,4 @@
 Then everytime to view the website:
 8. run 'node server.js'
 9. In your browser, go to "http://localhost:3000"
+...
