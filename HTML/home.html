@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internship Finder</title>
+    <link rel="stylesheet" href="../CSS/style.css">
+</head>
+<body>
+    <header>
+         <a href="/">
+            <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" style="height: 50px;">
+        </a>
+        
+        <!-- Navigation for Logged-Out Users -->
+        <nav id="nav-logged-out">
+            <a href="login.html">Login</a>
+            <a href="signup.html">Signup</a>
+        </nav>
+
+        <!-- Navigation for Logged-In Users (hidden by default) -->
+        <nav id="nav-logged-in" style="display: none; align-items: center;">
+            <a id="dashboard-link" href="#" style="position:relative;top:6px;">Dashboard</a>
+            <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <h2>Find Your Dream Internship</h2>
+            <p>The best place for students to discover internships and for companies to find top talent.</p>
+            <div class="cta-buttons">
+                <a href="signup.html" class="btn">Get Started</a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <i>CSIT128 - Assignment 2 - Deliverable 1 - Group 6</i>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLoggedOut = document.getElementById('nav-logged-out');
+            const navLoggedIn = document.getElementById('nav-logged-in');
+            const dashboardLink = document.getElementById('dashboard-link');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            // Check if user information is stored in localStorage
+            const user = JSON.parse(localStorage.getItem('user'));
+
+            if (user) {
+                // If user is logged in, show the logged-in navigation
+                navLoggedOut.style.display = 'none';
+                navLoggedIn.style.display = 'flex'; // The alignment is now handled by the inline style
+
+
+                // Set the correct dashboard link based on the user's role
+                if (user.role === 'student') {
+                    dashboardLink.href = 'student-dashboard.html';
+                } else if (user.role === 'company') {
+                    dashboardLink.href = 'company-dashboard.html';
+                }
+
+                // Add functionality to the logout button
+                logoutBtn.addEventListener('click', () => {
+                    localStorage.removeItem('user');
+                    window.location.reload(); // Reload the page to update the navigation
+                });
+            } else {
+                // If user is not logged in, ensure the default navigation is shown
+                navLoggedOut.style.display = 'block';
+                navLoggedIn.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
+

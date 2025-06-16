@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - UOWD Internships</title>
+    <link rel="stylesheet" href="../CSS/style.css">
+</head>
+<body>
+    <header>
+        <a href="home.html">
+            <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" style="height: 50px;">
+        </a>
+        <h1>Student Dashboard</h1>
+        <nav>
+            <a href="home.html">Home</a>
+            <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        </nav>
+    </header>
+
+    <main>
+        <div class="dashboard-container">
+            <h2>Available Internships</h2>
+            <div id="internshipList">
+                <!-- Internships will be dynamically loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <i>CSIT128 - Assignment 2 - Deliverable 1 - Group 6</i>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const internshipList = document.getElementById('internshipList');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            // Redirect if not logged in
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || user.role !== 'student') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Logout
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            });
+
+            // Fetch all internships
+            const fetchInternships = async () => {
+                try {
+                    const response = await fetch('../internships');
+                    const internships = await response.json();
+                    internshipList.innerHTML = '';
+                    if (internships.length === 0) {
+                        internshipList.innerHTML = '<p>No internships posted yet.</p>';
+                        return;
+                    }
+                    internships.forEach(internship => {
+                        const card = document.createElement('div');
+                        card.className = 'internship-card';
+                        card.innerHTML = `
+                            <h3>${internship.title}</h3>
+                            <p><strong>Company:</strong> ${internship.company_name}</p>
+                            <p><strong>Location:</strong> ${internship.location}</p>
+                            <p>${internship.description}</p>
+                            <button class="btn apply-btn" data-internship-id="${internship.internship_id}">Apply</button>
+                        `;
+                        internshipList.appendChild(card);
+                    });
+                } catch (err) {
+                    internshipList.innerHTML = '<p>Could not fetch internships.</p>';
+                }
+            };
+            
+            // Handle clicking the "Apply" button
+            internshipList.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('apply-btn')) {
+                    const internshipId = e.target.getAttribute('data-internship-id');
+                    const studentId = user.id;
+
+                    try {
+                        const response = await fetch('/apply', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ internshipId, studentId }),
+                        });
+                        const result = await response.json();
+                        if (response.ok) {
+                            alert('Application successful!');
+                        } else {
+                            alert(`Error: ${result.message}`);
+                        }
+                    } catch (err) {
+                        alert('An error occurred while applying.');
+                    }
+                }
+            });
+
+            fetchInternships();
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - UOWD Internships</title>
+    <link rel="stylesheet" href="../CSS/style.css">
+</head>
+<body>
+    <header>
+       <a href="home.html">
+            <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" style="height: 50px;">
+        </a>
+        <nav>
+            <a href="home.html">Home</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="form-container">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                 <div class="form-group">
+                    <label for="role">I am a:</label>
+                    <select id="role" name="role" required>
+                        <option value="student">Student</option>
+                        <option value="company">Company</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-full-width">Login</button>
+            </form>
+            <p id="message" style="text-align: center; margin-top: 1rem;"></p>
+        </div>
+    </main>
+
+    <footer>
+        <i>CSIT128 - Assignment 2 - Deliverable 1 - Group 6</i>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            const messageElement = document.getElementById('message');
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(loginForm);
+                const data = Object.fromEntries(formData.entries());
+
+                try {
+                    const response = await fetch('/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        // Store user info in browser's local storage and redirect
+                        localStorage.setItem('user', JSON.stringify(result.user));
+                        window.location.href = result.redirectUrl; // Redirect to the dashboard
+                    } else {
+                        messageElement.textContent = result.message;
+                        messageElement.style.color = 'red';
+                    }
+                } catch (err) {
+                    messageElement.textContent = 'An error occurred. Please try again.';
+                    messageElement.style.color = 'red';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,9 @@
+1. Open CMD as Admin
+2. Cd into this project folder
+3. Run 'npm install mysql' in this directory (make sure you have npm command installed)
+4. run  'sudo mysql -u root -p'
+5. while in 'mysql>' paste and run "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'admin';", then run 'FLUSH PRIVILEGES;', and finally 'EXIT;'
+7. run 'node setupDatabase.js' once
+Then everytime to view the website:
+8. run 'node server.js'
+9. In your browser, go to "http://localhost:3000"
