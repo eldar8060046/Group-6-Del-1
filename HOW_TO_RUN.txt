@@ -12,7 +12,7 @@ Now to test our website:
 
 4. cd into this project folder
 5. Run 'npm install mysql' in this directory (make sure you have npm command installed)
-6. run 'node setupDatabase.js' once
+6. run 'node setupDatabase.js' once (if you get aggregate error make sure MySQL service is running, on windowns run 'sudo net start MYSQL80')
 Then everytime to view the website:
 7. run 'node server.js'
 8. In your browser, go to "http://localhost:3000"
