@@ -59,6 +59,7 @@
         </a>
         <nav>
             <a href="/">Home</a>
+            <a href="company-profile.html">Profile</a>
             <button id="logoutBtn" class="btn btn-secondary">Logout</button>
         </nav>
     </header>
@@ -330,6 +331,29 @@
                     }
                 }
             });
+            
+            applicationList.addEventListener('change', async (e) => {
+                if(e.target.classList.contains('status-select')) {
+                    const applicationId = e.target.dataset.applicationId;
+                    const newStatus = e.target.value;
+
+                    try {
+                        const response = await fetch(`/applications/${applicationId}/status`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json'},
+                            body: JSON.stringify({ status: newStatus })
+                        });
+
+                        if(!response.ok) {
+                           alert('Failed to update status.');
+                           // Optionally refresh data to revert UI change
+                           fetchCompanyData();
+                        }
+                    } catch (err) {
+                        alert('An error occurred while updating status.');
+                    }
+                }
+            });
 
             async function fetchCompanyData() {
                 // Fetch company's posted internships
@@ -343,7 +367,6 @@
                         internships.forEach(internship => {
                             const card = document.createElement('div');
                             card.className = 'internship-card';
-                            // Updated HTML structure for the new layout
                             card.innerHTML = `
                                 <h3>${internship.title}</h3>
                                 <div class="internship-card-body">
@@ -386,6 +409,16 @@
                                 <h3>${app.internship_title}</h3>
                                 <p><strong>Applicant:</strong> ${app.student_name} (${app.student_email})</p>
                                 <p><strong>Applied on:</strong> ${new Date(app.application_date).toLocaleDateString()}</p>
+                                <div class="form-group">
+                                    <label for="status-select-${app.application_id}">Status: </label>
+                                    <select class="status-select" data-application-id="${app.application_id}">
+                                        <option value="Submitted" ${app.status === 'Submitted' ? 'selected' : ''}>Submitted</option>
+                                        <option value="Viewed" ${app.status === 'Viewed' ? 'selected' : ''}>Viewed</option>
+                                        <option value="Shortlisted" ${app.status === 'Shortlisted' ? 'selected' : ''}>Shortlisted</option>
+                                        <option value="Accepted" ${app.status === 'Accepted' ? 'selected' : ''}>Accepted</option>
+                                        <option value="Rejected" ${app.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+                                    </select>
+                                </div>
                             `;
                             applicationList.appendChild(card);
                         });

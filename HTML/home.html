@@ -21,6 +21,7 @@
         <!-- Navigation for Logged-In Users (hidden by default) -->
         <nav id="nav-logged-in" style="display: none; align-items: center;">
             <a id="dashboard-link" href="#" style="position:relative;top:6px;">Dashboard</a>
+            <a id="profile-link" href="#" style="position:relative;top:6px;">Profile</a>
             <button id="logoutBtn" class="btn btn-secondary">Logout</button>
         </nav>
     </header>
@@ -44,31 +45,28 @@
             const navLoggedOut = document.getElementById('nav-logged-out');
             const navLoggedIn = document.getElementById('nav-logged-in');
             const dashboardLink = document.getElementById('dashboard-link');
+            const profileLink = document.getElementById('profile-link');
             const logoutBtn = document.getElementById('logoutBtn');
 
-            // Check if user information is stored in localStorage
             const user = JSON.parse(localStorage.getItem('user'));
 
             if (user) {
-                // If user is logged in, show the logged-in navigation
                 navLoggedOut.style.display = 'none';
-                navLoggedIn.style.display = 'flex'; // The alignment is now handled by the inline style
+                navLoggedIn.style.display = 'flex';
 
-
-                // Set the correct dashboard link based on the user's role
                 if (user.role === 'student') {
-                    dashboardLink.href = 'student-dashboard.html';
+                    dashboardLink.href = 'HTML/student-dashboard.html';
+                    profileLink.href = 'HTML/student-profile.html';
                 } else if (user.role === 'company') {
-                    dashboardLink.href = 'company-dashboard.html';
+                    dashboardLink.href = 'HTML/company-dashboard.html';
+                    profileLink.href = 'HTML/company-profile.html';
                 }
 
-                // Add functionality to the logout button
                 logoutBtn.addEventListener('click', () => {
                     localStorage.removeItem('user');
-                    window.location.reload(); // Reload the page to update the navigation
+                    window.location.reload();
                 });
             } else {
-                // If user is not logged in, ensure the default navigation is shown
                 navLoggedOut.style.display = 'block';
                 navLoggedIn.style.display = 'none';
             }

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Profile - UOWD Internships</title>
+    <link rel="stylesheet" href="../CSS/style.css">
+</head>
+<body>
+    <header>
+        <a href="/">
+            <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" style="height: 50px;">
+        </a>
+        <nav>
+            <a href="student-dashboard.html">Dashboard</a>
+            <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        </nav>
+    </header>
+
+    <main class="dashboard-container">
+        <section class="form-container form-container-wide">
+            <h2>Your Profile</h2>
+            <form id="profileForm">
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" name="firstName" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" name="lastName" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <button type="submit" class="btn">Update Profile</button>
+            </form>
+            <p id="profileMessage" style="text-align: center; margin-top: 1rem;"></p>
+        </section>
+
+        <section class="form-container form-container-wide">
+            <h2>Change Password</h2>
+            <form id="passwordForm">
+                 <div class="form-group">
+                    <label for="oldPassword">Old Password</label>
+                    <input type="password" id="oldPassword" name="oldPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" name="newPassword" required>
+                </div>
+                <button type="submit" class="btn">Change Password</button>
+            </form>
+            <p id="passwordMessage" style="text-align: center; margin-top: 1rem;"></p>
+        </section>
+    </main>
+
+    <footer>
+        <i>CSIT128 - Assignment 2 - Deliverable 1 - Group 6</i>
+    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || user.role !== 'student') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const profileForm = document.getElementById('profileForm');
+            const passwordForm = document.getElementById('passwordForm');
+            const profileMessage = document.getElementById('profileMessage');
+            const passwordMessage = document.getElementById('passwordMessage');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            });
+            
+            async function fetchProfile() {
+                try {
+                    const response = await fetch(`/profile-details?userId=${user.id}&role=student`);
+                    if (!response.ok) throw new Error('Failed to fetch profile');
+                    const data = await response.json();
+                    document.getElementById('firstName').value = data.first_name;
+                    document.getElementById('lastName').value = data.last_name;
+                    document.getElementById('email').value = data.email;
+                } catch (err) {
+                    profileMessage.textContent = 'Could not load profile data.';
+                    profileMessage.style.color = 'red';
+                }
+            }
+
+            profileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(profileForm);
+                const data = Object.fromEntries(formData.entries());
+                data.userId = user.id;
+                data.role = 'student';
+
+                try {
+                    const response = await fetch('/update-profile', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        profileMessage.textContent = result.message;
+                        profileMessage.style.color = 'green';
+                    } else {
+                        profileMessage.textContent = result.message;
+                        profileMessage.style.color = 'red';
+                    }
+                } catch (err) {
+                    profileMessage.textContent = 'An error occurred.';
+                    profileMessage.style.color = 'red';
+                }
+            });
+
+            passwordForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(passwordForm);
+                const data = Object.fromEntries(formData.entries());
+                data.userId = user.id;
+                data.role = 'student';
+
+                 try {
+                    const response = await fetch('/update-password', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        passwordMessage.textContent = result.message;
+                        passwordMessage.style.color = 'green';
+                        passwordForm.reset();
+                    } else {
+                        passwordMessage.textContent = result.message;
+                        passwordMessage.style.color = 'red';
+                    }
+                } catch (err) {
+                    passwordMessage.textContent = 'An error occurred.';
+                    passwordMessage.style.color = 'red';
+                }
+            });
+            
+            fetchProfile();
+        });
+    </script>
+</body>
+</html>
+

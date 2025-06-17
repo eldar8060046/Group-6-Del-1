@@ -3,28 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard - UOWD Internships</title>
+    <title>Student Dashboard - Internship Finder</title>
     <link rel="stylesheet" href="../CSS/style.css">
+    <style>
+        .internship-card, .application-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+        .internship-info, .application-info {
+            flex-grow: 1;
+        }
+        .internship-info h3, .application-info h3 {
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
     <header>
         <a href="/">
             <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" style="height: 50px;">
         </a>
-        <h1>Student Dashboard</h1>
         <nav>
             <a href="/">Home</a>
+            <a href="student-profile.html">Profile</a>
             <button id="logoutBtn" class="btn btn-secondary">Logout</button>
         </nav>
     </header>
 
-    <main>
-        <div class="dashboard-container">
+    <main class="dashboard-container">
+        <section>
+            <h2>My Applications</h2>
+            <div id="myApplicationsList"></div>
+        </section>
+
+        <section>
             <h2>Available Internships</h2>
-            <div id="internshipList">
-                <!-- Internships will be dynamically loaded here -->
-            </div>
-        </div>
+            <div id="internshipList"></div>
+        </section>
     </main>
 
     <footer>
@@ -34,73 +51,153 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const internshipList = document.getElementById('internshipList');
+            const myApplicationsList = document.getElementById('myApplicationsList');
             const logoutBtn = document.getElementById('logoutBtn');
 
-            // Redirect if not logged in
             const user = JSON.parse(localStorage.getItem('user'));
             if (!user || user.role !== 'student') {
                 window.location.href = 'login.html';
                 return;
             }
 
-            // Logout
             logoutBtn.addEventListener('click', () => {
                 localStorage.removeItem('user');
                 window.location.href = 'login.html';
             });
 
-            // Fetch all internships
-            const fetchInternships = async () => {
+            async function fetchAllData() {
                 try {
-                    const response = await fetch('../internships');
-                    const internships = await response.json();
-                    internshipList.innerHTML = '';
-                    if (internships.length === 0) {
-                        internshipList.innerHTML = '<p>No internships posted yet.</p>';
-                        return;
+                    const [internshipsResponse, applicationsResponse] = await Promise.all([
+                        fetch('/internships'),
+                        fetch(`/student-applications?studentId=${user.id}`)
+                    ]);
+
+                    if (!internshipsResponse.ok || !applicationsResponse.ok) {
+                        throw new Error('Failed to fetch data.');
                     }
-                    internships.forEach(internship => {
-                        const card = document.createElement('div');
-                        card.className = 'internship-card';
-                        card.innerHTML = `
+
+                    const allInternships = await internshipsResponse.json();
+                    const myApplications = await applicationsResponse.json();
+                    
+                    const appliedInternshipIds = new Set(myApplications.map(app => app.internship_id));
+
+                    renderInternships(allInternships, appliedInternshipIds);
+                    renderMyApplications(myApplications);
+
+                } catch (err) {
+                    internshipList.innerHTML = '<p>Could not fetch internship data.</p>';
+                    myApplicationsList.innerHTML = '<p>Could not fetch your applications.</p>';
+                }
+            }
+            
+            function renderInternships(internships, appliedIds) {
+                internshipList.innerHTML = '';
+                const availableInternships = internships.filter(intern => !appliedIds.has(intern.internship_id));
+                
+                if (availableInternships.length === 0) {
+                    internshipList.innerHTML = '<p>No new internships to apply for, or you have applied to all of them.</p>';
+                    return;
+                }
+
+                availableInternships.forEach(internship => {
+                    const card = document.createElement('div');
+                    card.className = 'internship-card';
+                    card.innerHTML = `
+                        <div class="internship-info">
                             <h3>${internship.title}</h3>
                             <p><strong>Company:</strong> ${internship.company_name}</p>
-                            <p><strong>Location:</strong> ${internship.location}</p>
+                            <p>
+                                <strong>Location:</strong> ${internship.location} | 
+                                <strong>Type:</strong> ${internship.type} | 
+                                <strong>Duration:</strong> ${internship.duration}
+                            </p>
+                            <p><strong>Salary:</strong> ${internship.salary}</p>
+                            <p><strong>Skills Required:</strong> ${internship.skills_required}</p>
                             <p>${internship.description}</p>
-                            <button class="btn apply-btn" data-internship-id="${internship.internship_id}">Apply</button>
-                        `;
-                        internshipList.appendChild(card);
-                    });
-                } catch (err) {
-                    internshipList.innerHTML = '<p>Could not fetch internships.</p>';
-                }
-            };
-            
-            // Handle clicking the "Apply" button
-            internshipList.addEventListener('click', async (e) => {
-                if (e.target.classList.contains('apply-btn')) {
-                    const internshipId = e.target.getAttribute('data-internship-id');
-                    const studentId = user.id;
+                            <p><strong>Apply by:</strong> ${new Date(internship.deadline).toLocaleDateString()}</p>
+                        </div>
+                        <div class="card-actions">
+                           <button class="btn apply-btn" data-internship-id="${internship.internship_id}">Apply</button>
+                        </div>
+                    `;
+                    internshipList.appendChild(card);
+                });
+            }
 
+            function renderMyApplications(applications) {
+                myApplicationsList.innerHTML = '';
+                if (applications.length === 0) {
+                    myApplicationsList.innerHTML = '<p>You have not applied to any internships yet.</p>';
+                    return;
+                }
+
+                applications.forEach(app => {
+                    const card = document.createElement('div');
+                    card.className = 'application-card';
+                    card.innerHTML = `
+                        <div class="application-info">
+                            <h3>${app.title}</h3>
+                            <p><strong>Company:</strong> ${app.company_name}</p>
+                            <p><strong>Status:</strong> <span class="status-badge status-${app.status.toLowerCase()}">${app.status}</span></p>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-secondary withdraw-btn" data-internship-id="${app.internship_id}">Withdraw</button>
+                        </div>
+                    `;
+                    myApplicationsList.appendChild(card);
+                });
+            }
+            
+            internshipList.addEventListener('click', handleAction);
+            myApplicationsList.addEventListener('click', handleAction);
+
+            async function handleAction(e) {
+                const target = e.target;
+                const internshipId = target.dataset.internshipId;
+                
+                if (!internshipId) return;
+
+                if (target.classList.contains('apply-btn')) {
                     try {
                         const response = await fetch('/apply', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ internshipId, studentId }),
+                            body: JSON.stringify({ internshipId, studentId: user.id }),
                         });
-                        const result = await response.json();
                         if (response.ok) {
                             alert('Application successful!');
+                            fetchAllData();
                         } else {
+                            const result = await response.json();
                             alert(`Error: ${result.message}`);
                         }
                     } catch (err) {
                         alert('An error occurred while applying.');
                     }
                 }
-            });
 
-            fetchInternships();
+                if (target.classList.contains('withdraw-btn')) {
+                     if (confirm('Are you sure you want to withdraw your application?')) {
+                        try {
+                            const response = await fetch(`/withdraw/${internshipId}?studentId=${user.id}`, { 
+                                method: 'DELETE' 
+                            });
+
+                            if (response.ok) {
+                                alert('Application withdrawn successfully.');
+                                fetchAllData();
+                            } else {
+                                const result = await response.json();
+                                alert(`Error withdrawing application: ${result.message}`);
+                            }
+                        } catch (err) {
+                            alert('An error occurred while withdrawing.');
+                        }
+                    }
+                }
+            }
+
+            fetchAllData();
         });
     </script>
 </body>

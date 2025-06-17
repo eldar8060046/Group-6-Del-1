@@ -2,8 +2,6 @@
 -- then creates the necessary tables for the Internship Management Website.
 
 -- Drop tables in reverse order of creation to avoid foreign key constraints.
--- 'applications' is dropped first because it depends on 'internships' and 'students'.
--- 'internships' is dropped next because it depends on 'companies'.
 DROP TABLE IF EXISTS applications;
 DROP TABLE IF EXISTS internships;
 DROP TABLE IF EXISTS students;
@@ -48,6 +46,7 @@ CREATE TABLE IF NOT EXISTS applications (
     internship_id INT NOT NULL,
     student_id INT NOT NULL,
     application_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('Submitted', 'Viewed', 'Shortlisted', 'Accepted', 'Rejected') NOT NULL DEFAULT 'Submitted',
     FOREIGN KEY (internship_id) REFERENCES internships(internship_id) ON DELETE CASCADE,
     FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
     UNIQUE KEY unique_application (internship_id, student_id)
