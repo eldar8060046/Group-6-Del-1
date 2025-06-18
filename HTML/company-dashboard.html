@@ -59,7 +59,8 @@
         </a>
         <nav>
             <a href="/">Home</a>
-            <a href="company-profile.html">Profile</a>
+            <a href="company-dashboard.html">Dashboard</a>
+            <a href="company-account.html">Account</a>
             <button id="logoutBtn" class="btn btn-secondary">Logout</button>
         </nav>
     </header>
@@ -158,15 +159,9 @@
             </form>
         </section>
 
-
         <section>
             <h2>Your Posted Internships</h2>
             <div id="companyInternshipList"></div>
-        </section>
-
-        <section>
-            <h2>Applications Received</h2>
-            <div id="applicationList"></div>
         </section>
     </main>
 
@@ -175,24 +170,14 @@
     </footer>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Main Sections
             const createSection = document.getElementById('create-section');
             const editSection = document.getElementById('edit-section');
-            const companyInternshipListSection = document.getElementById('companyInternshipList').parentElement;
-            const applicationListSection = document.getElementById('applicationList').parentElement;
-
-            // Forms and Lists
+            const companyInternshipList = document.getElementById('companyInternshipList');
             const postInternshipForm = document.getElementById('postInternshipForm');
             const editInternshipForm = document.getElementById('editInternshipForm');
-            const companyInternshipList = document.getElementById('companyInternshipList');
-            const applicationList = document.getElementById('applicationList');
-            
-            // Messages and Buttons
             const postMessageElement = document.getElementById('postMessage');
             const logoutBtn = document.getElementById('logoutBtn');
             const cancelEditBtn = document.getElementById('cancelEditBtn');
-            
-            // Textareas for auto-expansion
             const descriptionTextarea = document.getElementById('description');
             const editDescriptionTextarea = document.getElementById('editDescription');
             
@@ -200,6 +185,12 @@
             if (!user || user.role !== 'company') {
                 window.location.href = 'login.html';
                 return;
+            }
+
+            function showMessage(message, isError = true) {
+                postMessageElement.textContent = message;
+                postMessageElement.style.color = isError ? 'red' : 'green';
+                setTimeout(() => { postMessageElement.textContent = '' }, 5000); // Clear message after 5 seconds
             }
             
             const autoExpand = (textarea) => {
@@ -210,22 +201,18 @@
             descriptionTextarea.addEventListener('input', () => autoExpand(descriptionTextarea));
             editDescriptionTextarea.addEventListener('input', () => autoExpand(editDescriptionTextarea));
 
-            // --- UI Helper Functions ---
             function showMainView() {
                 createSection.style.display = 'block';
                 editSection.style.display = 'none';
-                companyInternshipListSection.style.display = 'block';
-                applicationListSection.style.display = 'block';
+                document.getElementById('companyInternshipList').parentElement.style.display = 'block';
             }
 
             function showEditView() {
                 createSection.style.display = 'none';
                 editSection.style.display = 'block';
-                companyInternshipListSection.style.display = 'none';
-                applicationListSection.style.display = 'none';
+                document.getElementById('companyInternshipList').parentElement.style.display = 'none';
             }
             
-            // --- Event Listeners ---
             logoutBtn.addEventListener('click', () => {
                 localStorage.removeItem('user');
                 window.location.href = 'login.html';
@@ -235,8 +222,7 @@
 
             postInternshipForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const formData = new FormData(postInternshipForm);
-                const data = Object.fromEntries(formData.entries());
+                const data = Object.fromEntries(new FormData(postInternshipForm).entries());
                 data.companyId = user.id;
 
                 try {
@@ -247,24 +233,20 @@
                     });
                     const result = await response.json();
                     if (response.ok) {
-                        postMessageElement.textContent = 'Internship posted successfully!';
-                        postMessageElement.style.color = 'green';
+                        showMessage(result.message, false);
                         postInternshipForm.reset();
                         fetchCompanyData();
                     } else {
-                        postMessageElement.textContent = result.message;
-                        postMessageElement.style.color = 'red';
+                        showMessage(result.message);
                     }
                 } catch (err) {
-                    postMessageElement.textContent = 'An error occurred.';
-                    postMessageElement.style.color = 'red';
+                    showMessage('An error occurred.');
                 }
             });
 
             editInternshipForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const formData = new FormData(editInternshipForm);
-                const data = Object.fromEntries(formData.entries());
+                const data = Object.fromEntries(new FormData(editInternshipForm).entries());
                 const internshipId = data.internshipId;
 
                 try {
@@ -273,24 +255,22 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data),
                     });
-
                     if (response.ok) {
                         showMainView();
                         fetchCompanyData();
                     } else {
                         const result = await response.json();
-                        alert(`Error updating internship: ${result.message}`);
+                        showMessage(`Error updating internship: ${result.message}`);
                     }
                 } catch (err) {
-                    alert('An error occurred while applying changes.');
+                    showMessage('An error occurred while applying changes.');
                 }
             });
 
             companyInternshipList.addEventListener('click', async (e) => {
                 const target = e.target;
-                if (!target.dataset.internshipId) return;
-                
                 const internshipId = target.dataset.internshipId;
+                if (!internshipId) return;
 
                 if (target.classList.contains('edit-btn')) {
                     try {
@@ -311,7 +291,7 @@
                         showEditView();
                         autoExpand(document.getElementById('editDescription'));
                     } catch(err) {
-                        alert('Could not load internship details for editing.');
+                        showMessage('Could not load internship details for editing.');
                     }
                 }
 
@@ -323,40 +303,20 @@
                                 fetchCompanyData();
                             } else {
                                 const result = await response.json();
-                                alert(`Error deleting internship: ${result.message}`);
+                                showMessage(`Error: ${result.message}`);
                             }
                         } catch (err) {
-                            alert('An error occurred while deleting the internship.');
+                            showMessage('An error occurred while deleting.');
                         }
                     }
                 }
-            });
-            
-            applicationList.addEventListener('change', async (e) => {
-                if(e.target.classList.contains('status-select')) {
-                    const applicationId = e.target.dataset.applicationId;
-                    const newStatus = e.target.value;
-
-                    try {
-                        const response = await fetch(`/applications/${applicationId}/status`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json'},
-                            body: JSON.stringify({ status: newStatus })
-                        });
-
-                        if(!response.ok) {
-                           alert('Failed to update status.');
-                           // Optionally refresh data to revert UI change
-                           fetchCompanyData();
-                        }
-                    } catch (err) {
-                        alert('An error occurred while updating status.');
-                    }
+                
+                if(target.classList.contains('view-applicants-btn')) {
+                    window.location.href = `view-applicants.html?internshipId=${internshipId}`;
                 }
             });
 
             async function fetchCompanyData() {
-                // Fetch company's posted internships
                 try {
                     const response = await fetch(`/company-internships?companyId=${user.id}`);
                     const internships = await response.json();
@@ -367,6 +327,16 @@
                         internships.forEach(internship => {
                             const card = document.createElement('div');
                             card.className = 'internship-card';
+                            
+                            let applicantInfoHtml = '';
+                            if (internship.applicant_count > 0) {
+                                const applicantText = internship.applicant_count === 1 ? '1 Applicant' : `${internship.applicant_count} Applicants`;
+                                applicantInfoHtml = `
+                                    <p><strong>Applicants:</strong> ${applicantText}</p>
+                                    <button class="btn view-applicants-btn" data-internship-id="${internship.internship_id}">View Applicants</button>
+                                `;
+                            }
+
                             card.innerHTML = `
                                 <h3>${internship.title}</h3>
                                 <div class="internship-card-body">
@@ -380,8 +350,10 @@
                                         <p><strong>Skills Required:</strong> ${internship.skills_required}</p>
                                         <p class="description">${internship.description}</p>
                                         <p><strong>Apply by:</strong> ${new Date(internship.deadline).toLocaleDateString()}</p>
+                                        ${applicantInfoHtml ? `<p><strong>Applicants:</strong> ${internship.applicant_count === 1 ? '1 Applicant' : `${internship.applicant_count} Applicants`}</p>` : ''}
                                     </div>
                                     <div class="card-actions">
+                                        ${internship.applicant_count > 0 ? `<button class="btn view-applicants-btn" data-internship-id="${internship.internship_id}">View Applicants</button>` : ''}
                                         <button class="btn edit-btn" data-internship-id="${internship.internship_id}">Edit</button>
                                         <button class="btn btn-secondary delete-btn" data-internship-id="${internship.internship_id}">Delete</button>
                                     </div>
@@ -391,43 +363,9 @@
                         });
                     }
                 } catch (err) {
-                    companyInternshipList.innerHTML = '<p>Could not fetch your internships.</p>';
-                }
-
-                // Fetch applications for the company's internships
-                try {
-                    const response = await fetch(`/applications?companyId=${user.id}`);
-                    const applications = await response.json();
-                    applicationList.innerHTML = '';
-                    if (applications.length === 0) {
-                        applicationList.innerHTML = '<p>No applications received yet.</p>';
-                    } else {
-                        applications.forEach(app => {
-                            const card = document.createElement('div');
-                            card.className = 'application-card';
-                            card.innerHTML = `
-                                <h3>${app.internship_title}</h3>
-                                <p><strong>Applicant:</strong> ${app.student_name} (${app.student_email})</p>
-                                <p><strong>Applied on:</strong> ${new Date(app.application_date).toLocaleDateString()}</p>
-                                <div class="form-group">
-                                    <label for="status-select-${app.application_id}">Status: </label>
-                                    <select class="status-select" data-application-id="${app.application_id}">
-                                        <option value="Submitted" ${app.status === 'Submitted' ? 'selected' : ''}>Submitted</option>
-                                        <option value="Viewed" ${app.status === 'Viewed' ? 'selected' : ''}>Viewed</option>
-                                        <option value="Shortlisted" ${app.status === 'Shortlisted' ? 'selected' : ''}>Shortlisted</option>
-                                        <option value="Accepted" ${app.status === 'Accepted' ? 'selected' : ''}>Accepted</option>
-                                        <option value="Rejected" ${app.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
-                                    </select>
-                                </div>
-                            `;
-                            applicationList.appendChild(card);
-                        });
-                    }
-                } catch (err) {
-                    applicationList.innerHTML = '<p>Could not fetch applications.</p>';
+                    showMessage('Could not fetch your internships.');
                 }
             }
-
             fetchCompanyData();
             showMainView();
         });

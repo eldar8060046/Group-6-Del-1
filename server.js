@@ -81,16 +81,16 @@ function handleApiRequest(pathname, method, data, res, req) {
             const redirectUrl = role === 'student' ? '/HTML/student-dashboard.html' : '/HTML/company-dashboard.html';
             sendResponse(res, 200, { message: 'Login successful', user, redirectUrl });
         });
-    } else if (pathname === '/profile-details' && method === 'GET') {
+    } else if (pathname === '/account-details' && method === 'GET') {
         const { userId, role } = parsedUrl.query;
         const table = role === 'student' ? 'students' : 'companies';
         const idField = role === 'student' ? 'student_id' : 'company_id';
         const query = `SELECT * FROM ${table} WHERE ${idField} = ?`;
         db.query(query, [userId], (err, results) => {
-            if (err || results.length === 0) return sendResponse(res, 404, { message: 'Profile not found.' });
+            if (err || results.length === 0) return sendResponse(res, 404, { message: 'Account not found.' });
             res.end(JSON.stringify(results[0]));
         });
-    } else if (pathname === '/update-profile' && method === 'PUT') {
+    } else if (pathname === '/update-account' && method === 'PUT') {
         const { userId, role, email, companyName, firstName, lastName } = data;
         const table = role === 'student' ? 'students' : 'companies';
         const idField = role === 'student' ? 'student_id' : 'company_id';
@@ -105,9 +105,9 @@ function handleApiRequest(pathname, method, data, res, req) {
         db.query(query, params, (err, result) => {
             if (err) {
                 if (err.code === 'ER_DUP_ENTRY') return sendResponse(res, 409, { message: 'This email is already in use.' });
-                return sendResponse(res, 500, { message: 'Failed to update profile.' });
+                return sendResponse(res, 500, { message: 'Failed to update account.' });
             }
-            sendResponse(res, 200, { message: 'Profile updated successfully.' });
+            sendResponse(res, 200, { message: 'Account updated successfully.' });
         });
     } else if (pathname === '/update-password' && method === 'PUT') {
         const { userId, role, oldPassword, newPassword } = data;
@@ -129,11 +129,47 @@ function handleApiRequest(pathname, method, data, res, req) {
 
     // --- Internship Actions ---
     else if (pathname === '/internships' && method === 'GET') {
-        const query = 'SELECT i.*, c.company_name FROM internships i JOIN companies c ON i.company_id = c.company_id ORDER BY i.posted_at DESC';
-        db.query(query, (err, results) => {
+        const { title, company, skills, location, type, salary } = parsedUrl.query;
+        let query = 'SELECT i.*, c.company_name FROM internships i JOIN companies c ON i.company_id = c.company_id';
+        const conditions = [];
+        const params = [];
+
+        if (title) {
+            conditions.push('i.title LIKE ?');
+            params.push(`%${title}%`);
+        }
+        if (company) {
+            conditions.push('c.company_name LIKE ?');
+            params.push(`%${company}%`);
+        }
+        if (skills) {
+            conditions.push('i.skills_required LIKE ?');
+            params.push(`%${skills}%`);
+        }
+        if (location) {
+            conditions.push('i.location LIKE ?');
+            params.push(`%${location}%`);
+        }
+        if (type) {
+            conditions.push('i.type = ?');
+            params.push(type);
+        }
+        if (salary) {
+            conditions.push('i.salary LIKE ?');
+            params.push(`%${salary}%`);
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
+        }
+        
+        query += ' ORDER BY i.posted_at DESC';
+
+        db.query(query, params, (err, results) => {
             if (err) return sendResponse(res, 500, { message: 'Database error.' });
             res.end(JSON.stringify(results));
         });
+
     } else if (pathname === '/internships' && method === 'POST') {
         const { title, description, location, companyId, type, skills_required, salary, duration, deadline } = data;
         const query = 'INSERT INTO internships (title, description, location, company_id, type, skills_required, salary, duration, deadline) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
@@ -180,28 +216,48 @@ function handleApiRequest(pathname, method, data, res, req) {
     // --- Data Fetching & Application Management Endpoints ---
      else if (pathname === '/company-internships' && method === 'GET') {
         const companyId = parsedUrl.query.companyId;
-        const query = 'SELECT * FROM internships WHERE company_id = ? ORDER BY posted_at DESC';
+        const query = `
+            SELECT i.*, COUNT(a.application_id) AS applicant_count
+            FROM internships i
+            LEFT JOIN applications a ON i.internship_id = a.internship_id
+            WHERE i.company_id = ?
+            GROUP BY i.internship_id
+            ORDER BY i.posted_at DESC`;
         db.query(query, [companyId], (err, results) => {
             if (err) return sendResponse(res, 500, { message: 'Database error.' });
             res.end(JSON.stringify(results));
         });
-    } else if (pathname === '/applications' && method === 'GET') {
-        const companyId = parsedUrl.query.companyId;
-        const query = `
-            SELECT a.application_id, a.status, s.first_name, s.last_name, s.email as student_email, i.title as internship_title, a.application_date 
-            FROM applications a
-            JOIN students s ON a.student_id = s.student_id
-            JOIN internships i ON a.internship_id = i.internship_id
-            WHERE i.company_id = ? 
-            ORDER BY a.application_date DESC`;
-        db.query(query, [companyId], (err, results) => {
-             if (err) return sendResponse(res, 500, { message: 'Database error.' });
-             const finalResults = results.map(r => ({ ...r, student_name: `${r.first_name} ${r.last_name}`}));
-             res.end(JSON.stringify(finalResults));
+    } else if (pathname.startsWith('/internship/') && pathname.endsWith('/applications') && method === 'GET') {
+        const internshipId = pathname.split('/')[2];
+        const getTitleQuery = 'SELECT title FROM internships WHERE internship_id = ?';
+        db.query(getTitleQuery, [internshipId], (err, titleResults) => {
+            if (err || titleResults.length === 0) return sendResponse(res, 404, { message: 'Internship not found' });
+            const internshipTitle = titleResults[0].title;
+
+            const getAppsQuery = `
+                SELECT a.application_id, a.status, s.first_name, s.last_name, s.email as student_email, a.application_date 
+                FROM applications a
+                JOIN students s ON a.student_id = s.student_id
+                WHERE a.internship_id = ? 
+                ORDER BY a.application_date DESC`;
+            db.query(getAppsQuery, [internshipId], (err, appResults) => {
+                if (err) return sendResponse(res, 500, { message: 'Database error fetching applications.' });
+                const finalData = {
+                    internshipTitle,
+                    applications: appResults.map(r => ({ ...r, student_name: `${r.first_name} ${r.last_name}` }))
+                };
+                res.end(JSON.stringify(finalData));
+            });
         });
     } else if (pathname.startsWith('/applications/') && pathname.endsWith('/status') && method === 'PUT') {
         const applicationId = pathname.split('/')[2];
         const { status } = data;
+
+        const allowedStatuses = ['Shortlisted', 'Accepted', 'Rejected'];
+        if (!allowedStatuses.includes(status)) {
+            return sendResponse(res, 400, { message: 'Invalid status provided.' });
+        }
+
         const query = 'UPDATE applications SET status = ? WHERE application_id = ?';
         db.query(query, [status, applicationId], (err, result) => {
             if (err) return sendResponse(res, 500, { message: 'Failed to update status.' });
@@ -210,7 +266,7 @@ function handleApiRequest(pathname, method, data, res, req) {
     } else if (pathname === '/student-applications' && method === 'GET') {
         const studentId = parsedUrl.query.studentId;
         const query = `
-            SELECT a.internship_id, a.status, i.title, c.company_name 
+            SELECT a.internship_id, a.status, i.*, c.company_name 
             FROM applications a 
             JOIN internships i ON a.internship_id = i.internship_id 
             JOIN companies c ON i.company_id = c.company_id 

@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - UOWD Internships</title>
+    <title>Login - Internship Finder</title>
     <link rel="stylesheet" href="../CSS/style.css">
 </head>
 <body>
     <header>
-       <a href="/">
+        <a href="/">
             <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" style="height: 50px;">
         </a>
         <nav>
-            <a href="/">Home</a>
-            <a href="signup.html">Sign Up</a>
+             <a href="/">Home</a>
+             <a href="login.html">Login</a>
+             <a href="signup.html">Sign Up</a>
         </nav>
     </header>
 
@@ -66,7 +67,7 @@
                     if (response.ok) {
                         // Store user info in browser's local storage and redirect
                         localStorage.setItem('user', JSON.stringify(result.user));
-                        window.location.href = result.redirectUrl; // Redirect to the dashboard
+                        window.location.href = result.redirectUrl; // Server provides the relative path
                     } else {
                         messageElement.textContent = result.message;
                         messageElement.style.color = 'red';

@@ -18,6 +18,47 @@
         .internship-info h3, .application-info h3 {
             text-align: left;
         }
+        /* Styles for the status badge */
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: white;
+            text-transform: capitalize;
+        }
+        .status-submitted { background-color: #6c757d; } /* Gray */
+        .status-viewed { background-color: #17a2b8; } /* Info Blue */
+        .status-shortlisted { background-color: #ffc107; color: #212529;} /* Yellow */
+        .status-accepted { background-color: #28a745; } /* Green */
+        .status-rejected { background-color: #dc3545; } /* Red */
+
+        /* Search Form Styles */
+        .search-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            align-items: flex-start;
+        }
+        .filter-grid {
+            flex-grow: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .filter-grid > * {
+            flex: 1 1 calc(33.333% - 1rem);
+            min-width: 150px;
+        }
+        .search-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .search-buttons .btn {
+            width: 100%;
+        }
+
     </style>
 </head>
 <body>
@@ -27,12 +68,16 @@
         </a>
         <nav>
             <a href="/">Home</a>
-            <a href="student-profile.html">Profile</a>
+            <a href="student-dashboard.html">Dashboard</a>
+            <a href="student-account.html">Account</a>
             <button id="logoutBtn" class="btn btn-secondary">Logout</button>
         </nav>
     </header>
 
     <main class="dashboard-container">
+        <!-- Message area for user feedback -->
+        <p id="dashboard-message" style="text-align: center; margin-bottom: 1rem; font-weight: bold;"></p>
+
         <section>
             <h2>My Applications</h2>
             <div id="myApplicationsList"></div>
@@ -40,6 +85,27 @@
 
         <section>
             <h2>Available Internships</h2>
+            <!-- Search and Filter Form -->
+            <form id="search-form" class="search-container">
+                <div class="filter-grid">
+                    <input type="text" id="search-title" name="title" placeholder="Internship Title...">
+                    <input type="text" id="search-company" name="company" placeholder="Company Name...">
+                    <input type="text" id="search-skills" name="skills" placeholder="Skill (e.g., Java, Marketing)...">
+                    <input type="text" id="search-location" name="location" placeholder="Location">
+                    <input type="text" id="search-salary" name="salary" placeholder="Salary (e.g., Unpaid, 5000)">
+                    <select id="search-type" name="type">
+                        <option value="">All Types</option>
+                        <option value="on-site">On-site</option>
+                        <option value="remote">Remote</option>
+                        <option value="hybrid">Hybrid</option>
+                    </select>
+                </div>
+                <div class="search-buttons">
+                    <button type="submit" class="btn">Search</button>
+                    <button type="reset" class="btn btn-secondary">Clear</button>
+                </div>
+            </form>
+
             <div id="internshipList"></div>
         </section>
     </main>
@@ -53,6 +119,8 @@
             const internshipList = document.getElementById('internshipList');
             const myApplicationsList = document.getElementById('myApplicationsList');
             const logoutBtn = document.getElementById('logoutBtn');
+            const messageElement = document.getElementById('dashboard-message');
+            const searchForm = document.getElementById('search-form');
 
             const user = JSON.parse(localStorage.getItem('user'));
             if (!user || user.role !== 'student') {
@@ -60,15 +128,21 @@
                 return;
             }
 
+            function showMessage(message, isError = true) {
+                messageElement.textContent = message;
+                messageElement.style.color = isError ? 'red' : 'green';
+                setTimeout(() => { messageElement.textContent = '' }, 5000); 
+            }
+
             logoutBtn.addEventListener('click', () => {
                 localStorage.removeItem('user');
                 window.location.href = 'login.html';
             });
 
-            async function fetchAllData() {
+            async function fetchAllData(queryParams = '') {
                 try {
                     const [internshipsResponse, applicationsResponse] = await Promise.all([
-                        fetch('/internships'),
+                        fetch(`/internships?${queryParams}`),
                         fetch(`/student-applications?studentId=${user.id}`)
                     ]);
 
@@ -85,8 +159,7 @@
                     renderMyApplications(myApplications);
 
                 } catch (err) {
-                    internshipList.innerHTML = '<p>Could not fetch internship data.</p>';
-                    myApplicationsList.innerHTML = '<p>Could not fetch your applications.</p>';
+                    showMessage('Could not fetch page data. Please refresh.');
                 }
             }
             
@@ -95,7 +168,7 @@
                 const availableInternships = internships.filter(intern => !appliedIds.has(intern.internship_id));
                 
                 if (availableInternships.length === 0) {
-                    internshipList.innerHTML = '<p>No new internships to apply for, or you have applied to all of them.</p>';
+                    internshipList.innerHTML = '<p>No internships found matching your criteria.</p>';
                     return;
                 }
 
@@ -138,6 +211,12 @@
                         <div class="application-info">
                             <h3>${app.title}</h3>
                             <p><strong>Company:</strong> ${app.company_name}</p>
+                             <p>
+                                <strong>Location:</strong> ${app.location} | 
+                                <strong>Type:</strong> ${app.type} | 
+                                <strong>Duration:</strong> ${app.duration}
+                            </p>
+                            <p><strong>Salary:</strong> ${app.salary}</p>
                             <p><strong>Status:</strong> <span class="status-badge status-${app.status.toLowerCase()}">${app.status}</span></p>
                         </div>
                         <div class="card-actions">
@@ -148,6 +227,22 @@
                 });
             }
             
+            searchForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = new FormData(searchForm);
+                const params = new URLSearchParams();
+                for (const [key, value] of formData.entries()) {
+                    if (value) {
+                        params.append(key, value);
+                    }
+                }
+                fetchAllData(params.toString());
+            });
+
+            searchForm.addEventListener('reset', () => {
+                fetchAllData();
+            });
+
             internshipList.addEventListener('click', handleAction);
             myApplicationsList.addEventListener('click', handleAction);
 
@@ -164,15 +259,15 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ internshipId, studentId: user.id }),
                         });
+                        const result = await response.json();
                         if (response.ok) {
-                            alert('Application successful!');
+                            showMessage('Application successful!', false);
                             fetchAllData();
                         } else {
-                            const result = await response.json();
-                            alert(`Error: ${result.message}`);
+                            showMessage(`Error: ${result.message}`);
                         }
                     } catch (err) {
-                        alert('An error occurred while applying.');
+                        showMessage('An error occurred while applying.');
                     }
                 }
 
@@ -184,14 +279,14 @@
                             });
 
                             if (response.ok) {
-                                alert('Application withdrawn successfully.');
+                                showMessage('Application withdrawn successfully.', false);
                                 fetchAllData();
                             } else {
                                 const result = await response.json();
-                                alert(`Error withdrawing application: ${result.message}`);
+                                showMessage(`Error withdrawing application: ${result.message}`);
                             }
                         } catch (err) {
-                            alert('An error occurred while withdrawing.');
+                            showMessage('An error occurred while withdrawing.');
                         }
                     }
                 }

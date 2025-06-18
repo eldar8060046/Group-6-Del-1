@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Applicants - UOWD Internships</title>
+    <link rel="stylesheet" href="../CSS/style.css">
+</head>
+<body>
+    <header>
+        <a href="/">
+            <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" style="height: 50px;">
+        </a>
+        <nav>
+            <a href="company-dashboard.html" class="btn">Back to Dashboard</a>
+        </nav>
+    </header>
+
+    <main class="dashboard-container">
+        <section>
+            <h2 id="internshipTitle">Applicants for...</h2>
+            
+            <!-- Search by Applicant Name -->
+            <div class="form-group">
+                <input type="text" id="applicant-search" placeholder="Search by applicant name..." style="width: 100%; max-width: 400px; margin-bottom: 1rem;">
+            </div>
+
+            <div id="applicationList">
+                <!-- Application cards will be dynamically loaded here -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <i>CSIT128 - Assignment 2 - Deliverable 1 - Group 6</i>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const applicationList = document.getElementById('applicationList');
+            const internshipTitle = document.getElementById('internshipTitle');
+            const applicantSearchInput = document.getElementById('applicant-search');
+            
+            let allApplications = []; // To store the original list of applicants
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const internshipId = urlParams.get('internshipId');
+
+            if (!internshipId) {
+                applicationList.innerHTML = '<p>No internship specified.</p>';
+                return;
+            }
+
+            async function fetchApplicants() {
+                try {
+                    const response = await fetch(`/internship/${internshipId}/applications`);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch applicants.');
+                    }
+                    const data = await response.json();
+
+                    if (!data.applications || data.applications.length === 0) {
+                        internshipTitle.textContent = `Applicants for ${data.internshipTitle}`;
+                        applicationList.innerHTML = '<p>No applications received for this internship yet.</p>';
+                        return;
+                    }
+                    
+                    internshipTitle.textContent = `Applicants for "${data.internshipTitle}"`;
+                    allApplications = data.applications;
+                    renderApplicants(allApplications);
+
+                } catch (err) {
+                    applicationList.innerHTML = `<p>Error loading applications: ${err.message}</p>`;
+                }
+            }
+
+            function renderApplicants(applicantsToRender) {
+                applicationList.innerHTML = ''; // Clear current list
+                if (applicantsToRender.length === 0) {
+                    applicationList.innerHTML = '<p>No applications match your search.</p>';
+                    return;
+                }
+
+                applicantsToRender.forEach(app => {
+                    const card = document.createElement('div');
+                    card.className = 'application-card';
+                    card.innerHTML = `
+                        <h3>${app.student_name}</h3>
+                        <p><strong>Email:</strong> ${app.student_email}</p>
+                        <p><strong>Applied on:</strong> ${new Date(app.application_date).toLocaleDateString()}</p>
+                        <div class="form-group">
+                            <label for="status-select-${app.application_id}">Status: </label>
+                            <select class="status-select" data-application-id="${app.application_id}">
+                                <option value="Shortlisted" ${app.status === 'Shortlisted' ? 'selected' : ''}>Shortlisted</option>
+                                <option value="Accepted" ${app.status === 'Accepted' ? 'selected' : ''}>Accepted</option>
+                                <option value="Rejected" ${app.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+                            </select>
+                        </div>
+                    `;
+                    applicationList.appendChild(card);
+                });
+            }
+
+            applicantSearchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredApplications = allApplications.filter(app => 
+                    app.student_name.toLowerCase().includes(searchTerm)
+                );
+                renderApplicants(filteredApplications);
+            });
+            
+            applicationList.addEventListener('change', async (e) => {
+                if(e.target.classList.contains('status-select')) {
+                    const applicationId = e.target.dataset.applicationId;
+                    const newStatus = e.target.value;
+
+                    try {
+                        const response = await fetch(`/applications/${applicationId}/status`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json'},
+                            body: JSON.stringify({ status: newStatus })
+                        });
+                        if(!response.ok) alert('Failed to update status.');
+                    } catch (err) {
+                        alert('An error occurred while updating status.');
+                    }
+                }
+            });
+
+            fetchApplicants();
+        });
+    </script>
+</body>
+</html>
+
