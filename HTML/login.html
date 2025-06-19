@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Internship Finder</title>
+    <title>Login - UOWD Internships</title>
+    <!-- Link to the external stylesheet -->
     <link rel="stylesheet" href="../CSS/style.css">
 </head>
 <body>
     <header>
         <a href="/">
-            <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" style="height: 50px;">
+            <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" class="logo">
         </a>
+        <!-- Consistent navigation for logged-out users -->
         <nav>
              <a href="/">Home</a>
              <a href="login.html">Login</a>
@@ -39,46 +41,15 @@
                 </div>
                 <button type="submit" class="btn btn-full-width">Login</button>
             </form>
-            <p id="message" style="text-align: center; margin-top: 1rem;"></p>
+            <p id="message" class="message"></p>
         </div>
     </main>
 
     <footer>
         <i>CSIT128 - Assignment 2 - Deliverable 1 - Group 6</i>
     </footer>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginForm = document.getElementById('loginForm');
-            const messageElement = document.getElementById('message');
-
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(loginForm);
-                const data = Object.fromEntries(formData.entries());
-
-                try {
-                    const response = await fetch('/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data),
-                    });
-                    const result = await response.json();
-                    if (response.ok) {
-                        // Store user info in browser's local storage and redirect
-                        localStorage.setItem('user', JSON.stringify(result.user));
-                        window.location.href = result.redirectUrl; // Server provides the relative path
-                    } else {
-                        messageElement.textContent = result.message;
-                        messageElement.style.color = 'red';
-                    }
-                } catch (err) {
-                    messageElement.textContent = 'An error occurred. Please try again.';
-                    messageElement.style.color = 'red';
-                }
-            });
-        });
-    </script>
+    <!-- Link to the external JavaScript file that handles login/signup logic -->
+    <script src="../Javascript/auth.js"></script>
 </body>
 </html>
 

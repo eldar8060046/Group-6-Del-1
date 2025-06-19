@@ -4,61 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UOWD Internships</title>
+    <!-- Path to CSS is now root-relative -->
     <link rel="stylesheet" href="CSS/style.css">
-    <style>
-        .internship-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 2rem;
-            text-align: left;
-        }
-        .internship-info {
-            flex-grow: 1;
-        }
-        .action-boxes {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-        .action-box {
-            display: block;
-            width: 250px;
-            padding: 2rem;
-            border-radius: 8px;
-            text-align: center;
-            text-decoration: none;
-            background-color: #343a40; /* Changed background to match header */
-            color: #ffffff; /* Changed text color to white */
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        }
-        .action-box:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-        }
-        .action-box h3 {
-            margin-top: 0;
-            color: #ffffff; /* Changed heading color to white */
-        }
-    </style>
 </head>
 <body>
+    <!-- The header contains the logo and navigation bar -->
     <header>
          <a href="/">
-            <img src="Images/uowd_logo.png" alt="UOWD Internships Logo" style="height: 50px;">
+            <!-- Path to Images is now root-relative -->
+            <img src="Images/uowd_logo.png" alt="UOWD Internships Logo" class="logo">
         </a>
         
-        <!-- Navigation for Logged-Out Users -->
+        <!-- This navigation bar is shown to users who are NOT logged in -->
         <nav id="nav-logged-out">
             <a href="/">Home</a>
+            <!-- Links to other pages now correctly point to the HTML subfolder -->
             <a href="HTML/login.html">Login</a>
             <a href="HTML/signup.html">Sign Up</a>
         </nav>
 
-        <!-- Navigation for Logged-In Users (hidden by default) -->
-        <nav id="nav-logged-in" style="display: none; align-items: center;">
+        <!-- This navigation bar is shown to users who ARE logged in (hidden by default via JS) -->
+        <nav id="nav-logged-in">
             <a href="/">Home</a>
             <a id="dashboard-link" href="#">Dashboard</a>
             <a id="account-link" href="#">Account</a>
@@ -67,35 +33,36 @@
     </header>
 
     <main class="container">
+        <!-- The main welcome message for the site -->
         <section class="hero">
             <h2>Welcome to the UOWD Internship Portal</h2>
             <p>Your dedicated platform for connecting UOWD students seeking industry experience and companies looking to recruit talents.<br>Find opportunities and post listings, all in one place.</p>
         </section>
 
-        <!-- Message area for feedback -->
-        <p id="home-message" style="text-align: center; margin-bottom: 1rem; font-weight: bold;"></p>
+        <!-- A dedicated paragraph for displaying messages to the user -->
+        <p id="home-message" class="message"></p>
         
-        <!-- Content for Logged-IN users -->
+        <!-- This content is shown to logged-in users -->
         <section id="logged-in-content" style="display: none;">
              <div class="action-boxes">
                 <a id="dashboard-box-link" href="#" class="action-box">
-                    <img src="Images/menu.png" alt="Dashboard Icon" style="height: 80px; margin-bottom: 1rem;">
+                    <img src="Images/menu.png" alt="Dashboard Icon" class="action-box-icon">
                     <h3>Dashboard</h3>
                     <p>Manage your internships and applications.</p>
                 </a>
                 <a id="account-box-link" href="#" class="action-box">
-                    <img src="Images/pfp.png" alt="Account Icon" style="height: 80px; margin-bottom: 1rem;">
+                    <img src="Images/pfp.png" alt="Account Icon" class="action-box-icon">
                     <h3>Account</h3>
                     <p>View and edit your profile details.</p>
                 </a>
             </div>
         </section>
 
-        <!-- Content for Logged-OUT users -->
+        <!-- This content is shown to logged-out users -->
         <section id="logged-out-content">
             <h2>Available Internships</h2>
             <div id="internshipList">
-                <!-- Internship cards will be loaded here by JavaScript -->
+                <!-- Internship cards will be dynamically loaded here by JavaScript -->
             </div>
         </section>
     </main>
@@ -104,109 +71,8 @@
         <i>CSIT128 - Assignment 2 - Deliverable 1 - Group 6</i>
     </footer>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const navLoggedOut = document.getElementById('nav-logged-out');
-            const navLoggedIn = document.getElementById('nav-logged-in');
-            const dashboardLink = document.getElementById('dashboard-link');
-            const accountLink = document.getElementById('account-link');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const internshipList = document.getElementById('internshipList');
-            const messageElement = document.getElementById('home-message');
-            const loggedOutContent = document.getElementById('logged-out-content');
-            const loggedInContent = document.getElementById('logged-in-content');
-            const dashboardBoxLink = document.getElementById('dashboard-box-link');
-            const accountBoxLink = document.getElementById('account-box-link');
-
-            const user = JSON.parse(localStorage.getItem('user'));
-
-            // --- Navigation and Content Toggling Logic ---
-            if (user) {
-                // Configure nav bar for logged-in user
-                navLoggedOut.style.display = 'none';
-                navLoggedIn.style.display = 'flex';
-                
-                let dashboardHref, accountHref;
-                if (user.role === 'student') {
-                    dashboardHref = 'HTML/student-dashboard.html';
-                    accountHref = 'HTML/student-account.html';
-                } else if (user.role === 'company') {
-                    dashboardHref = 'HTML/company-dashboard.html';
-                    accountHref = 'HTML/company-account.html';
-                }
-                dashboardLink.href = dashboardHref;
-                accountLink.href = accountHref;
-                dashboardBoxLink.href = dashboardHref;
-                accountBoxLink.href = accountHref;
-
-                logoutBtn.addEventListener('click', () => {
-                    localStorage.removeItem('user');
-                    window.location.reload();
-                });
-                
-                // Show the action boxes and hide the internship list
-                loggedInContent.style.display = 'block';
-                loggedOutContent.style.display = 'none';
-
-            } else {
-                // Configure nav bar for logged-out user
-                navLoggedOut.style.display = 'block';
-                navLoggedIn.style.display = 'none';
-
-                // Show the internship list and hide the action boxes
-                loggedInContent.style.display = 'none';
-                loggedOutContent.style.display = 'block';
-                fetchAndRenderInternships();
-            }
-
-            // --- Fetch and Render Internships (for logged-out users) ---
-            async function fetchAndRenderInternships() {
-                try {
-                    const response = await fetch('/internships');
-                    if (!response.ok) throw new Error('Could not fetch internships.');
-                    
-                    const internships = await response.json();
-                    internshipList.innerHTML = ''; // Clear previous content
-
-                    if (internships.length === 0) {
-                        internshipList.innerHTML = '<p>No internships are available at the moment. Please check back later.</p>';
-                        return;
-                    }
-
-                    internships.forEach(internship => {
-                        const card = document.createElement('div');
-                        card.className = 'internship-card';
-
-                        // For logged-out users, the button always links to the login page.
-                        const buttonHtml = `<a href="HTML/login.html" class="btn">Login to Apply</a>`;
-
-                        card.innerHTML = `
-                            <div class="internship-info">
-                                <h3>${internship.title}</h3>
-                                <p><strong>Company:</strong> ${internship.company_name}</p>
-                                <p>
-                                    <strong>Location:</strong> ${internship.location} | 
-                                    <strong>Type:</strong> ${internship.type} | 
-                                    <strong>Duration:</strong> ${internship.duration}
-                                </p>
-                                <p><strong>Salary:</strong> ${internship.salary}</p>
-                                <p><strong>Skills Required:</strong> ${internship.skills_required}</p>
-                                <p>${internship.description}</p>
-                                <p><strong>Apply by:</strong> ${new Date(internship.deadline).toLocaleDateString()}</p>
-                            </div>
-                            <div class="card-actions">
-                               ${buttonHtml}
-                            </div>
-                        `;
-                        internshipList.appendChild(card);
-                    });
-
-                } catch (err) {
-                    internshipList.innerHTML = `<p>${err.message}</p>`;
-                }
-            }
-        });
-    </script>
+    <!-- Link to the external JavaScript file, path is now root-relative -->
+    <script src="Javascript/home.js"></script>
 </body>
 </html>
 

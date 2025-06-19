@@ -5,66 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Dashboard - Internship Finder</title>
     <link rel="stylesheet" href="../CSS/style.css">
-    <style>
-        .internship-card, .application-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 2rem;
-        }
-        .internship-info, .application-info {
-            flex-grow: 1;
-        }
-        .internship-info h3, .application-info h3 {
-            text-align: left;
-        }
-        /* Styles for the status badge */
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.9em;
-            font-weight: bold;
-            color: white;
-            text-transform: capitalize;
-        }
-        .status-submitted { background-color: #6c757d; } /* Gray */
-        .status-viewed { background-color: #17a2b8; } /* Info Blue */
-        .status-shortlisted { background-color: #ffc107; color: #212529;} /* Yellow */
-        .status-accepted { background-color: #28a745; } /* Green */
-        .status-rejected { background-color: #dc3545; } /* Red */
-
-        /* Search Form Styles */
-        .search-container {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            align-items: flex-start;
-        }
-        .filter-grid {
-            flex-grow: 1;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-        .filter-grid > * {
-            flex: 1 1 calc(33.333% - 1rem);
-            min-width: 150px;
-        }
-        .search-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .search-buttons .btn {
-            width: 100%;
-        }
-
-    </style>
 </head>
 <body>
     <header>
         <a href="/">
-            <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" style="height: 50px;">
+            <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" class="logo">
         </a>
         <nav>
             <a href="/">Home</a>
@@ -76,7 +21,7 @@
 
     <main class="dashboard-container">
         <!-- Message area for user feedback -->
-        <p id="dashboard-message" style="text-align: center; margin-bottom: 1rem; font-weight: bold;"></p>
+        <p id="dashboard-message" class="message"></p>
 
         <section>
             <h2>My Applications</h2>
@@ -100,10 +45,6 @@
                         <option value="hybrid">Hybrid</option>
                     </select>
                 </div>
-                <div class="search-buttons">
-                    <button type="submit" class="btn">Search</button>
-                    <button type="reset" class="btn btn-secondary">Clear</button>
-                </div>
             </form>
 
             <div id="internshipList"></div>
@@ -114,187 +55,7 @@
         <i>CSIT128 - Assignment 2 - Deliverable 1 - Group 6</i>
     </footer>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const internshipList = document.getElementById('internshipList');
-            const myApplicationsList = document.getElementById('myApplicationsList');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const messageElement = document.getElementById('dashboard-message');
-            const searchForm = document.getElementById('search-form');
-
-            const user = JSON.parse(localStorage.getItem('user'));
-            if (!user || user.role !== 'student') {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            function showMessage(message, isError = true) {
-                messageElement.textContent = message;
-                messageElement.style.color = isError ? 'red' : 'green';
-                setTimeout(() => { messageElement.textContent = '' }, 5000); 
-            }
-
-            logoutBtn.addEventListener('click', () => {
-                localStorage.removeItem('user');
-                window.location.href = 'login.html';
-            });
-
-            async function fetchAllData(queryParams = '') {
-                try {
-                    const [internshipsResponse, applicationsResponse] = await Promise.all([
-                        fetch(`/internships?${queryParams}`),
-                        fetch(`/student-applications?studentId=${user.id}`)
-                    ]);
-
-                    if (!internshipsResponse.ok || !applicationsResponse.ok) {
-                        throw new Error('Failed to fetch data.');
-                    }
-
-                    const allInternships = await internshipsResponse.json();
-                    const myApplications = await applicationsResponse.json();
-                    
-                    const appliedInternshipIds = new Set(myApplications.map(app => app.internship_id));
-
-                    renderInternships(allInternships, appliedInternshipIds);
-                    renderMyApplications(myApplications);
-
-                } catch (err) {
-                    showMessage('Could not fetch page data. Please refresh.');
-                }
-            }
-            
-            function renderInternships(internships, appliedIds) {
-                internshipList.innerHTML = '';
-                const availableInternships = internships.filter(intern => !appliedIds.has(intern.internship_id));
-                
-                if (availableInternships.length === 0) {
-                    internshipList.innerHTML = '<p>No internships found matching your criteria.</p>';
-                    return;
-                }
-
-                availableInternships.forEach(internship => {
-                    const card = document.createElement('div');
-                    card.className = 'internship-card';
-                    card.innerHTML = `
-                        <div class="internship-info">
-                            <h3>${internship.title}</h3>
-                            <p><strong>Company:</strong> ${internship.company_name}</p>
-                            <p>
-                                <strong>Location:</strong> ${internship.location} | 
-                                <strong>Type:</strong> ${internship.type} | 
-                                <strong>Duration:</strong> ${internship.duration}
-                            </p>
-                            <p><strong>Salary:</strong> ${internship.salary}</p>
-                            <p><strong>Skills Required:</strong> ${internship.skills_required}</p>
-                            <p>${internship.description}</p>
-                            <p><strong>Apply by:</strong> ${new Date(internship.deadline).toLocaleDateString()}</p>
-                        </div>
-                        <div class="card-actions">
-                           <button class="btn apply-btn" data-internship-id="${internship.internship_id}">Apply</button>
-                        </div>
-                    `;
-                    internshipList.appendChild(card);
-                });
-            }
-
-            function renderMyApplications(applications) {
-                myApplicationsList.innerHTML = '';
-                if (applications.length === 0) {
-                    myApplicationsList.innerHTML = '<p>You have not applied to any internships yet.</p>';
-                    return;
-                }
-
-                applications.forEach(app => {
-                    const card = document.createElement('div');
-                    card.className = 'application-card';
-                    card.innerHTML = `
-                        <div class="application-info">
-                            <h3>${app.title}</h3>
-                            <p><strong>Company:</strong> ${app.company_name}</p>
-                             <p>
-                                <strong>Location:</strong> ${app.location} | 
-                                <strong>Type:</strong> ${app.type} | 
-                                <strong>Duration:</strong> ${app.duration}
-                            </p>
-                            <p><strong>Salary:</strong> ${app.salary}</p>
-                            <p><strong>Status:</strong> <span class="status-badge status-${app.status.toLowerCase()}">${app.status}</span></p>
-                        </div>
-                        <div class="card-actions">
-                            <button class="btn btn-secondary withdraw-btn" data-internship-id="${app.internship_id}">Withdraw</button>
-                        </div>
-                    `;
-                    myApplicationsList.appendChild(card);
-                });
-            }
-            
-            searchForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const formData = new FormData(searchForm);
-                const params = new URLSearchParams();
-                for (const [key, value] of formData.entries()) {
-                    if (value) {
-                        params.append(key, value);
-                    }
-                }
-                fetchAllData(params.toString());
-            });
-
-            searchForm.addEventListener('reset', () => {
-                fetchAllData();
-            });
-
-            internshipList.addEventListener('click', handleAction);
-            myApplicationsList.addEventListener('click', handleAction);
-
-            async function handleAction(e) {
-                const target = e.target;
-                const internshipId = target.dataset.internshipId;
-                
-                if (!internshipId) return;
-
-                if (target.classList.contains('apply-btn')) {
-                    try {
-                        const response = await fetch('/apply', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ internshipId, studentId: user.id }),
-                        });
-                        const result = await response.json();
-                        if (response.ok) {
-                            showMessage('Application successful!', false);
-                            fetchAllData();
-                        } else {
-                            showMessage(`Error: ${result.message}`);
-                        }
-                    } catch (err) {
-                        showMessage('An error occurred while applying.');
-                    }
-                }
-
-                if (target.classList.contains('withdraw-btn')) {
-                     if (confirm('Are you sure you want to withdraw your application?')) {
-                        try {
-                            const response = await fetch(`/withdraw/${internshipId}?studentId=${user.id}`, { 
-                                method: 'DELETE' 
-                            });
-
-                            if (response.ok) {
-                                showMessage('Application withdrawn successfully.', false);
-                                fetchAllData();
-                            } else {
-                                const result = await response.json();
-                                showMessage(`Error withdrawing application: ${result.message}`);
-                            }
-                        } catch (err) {
-                            showMessage('An error occurred while withdrawing.');
-                        }
-                    }
-                }
-            }
-
-            fetchAllData();
-        });
-    </script>
+    <script src="../Javascript/student.js"></script>
 </body>
 </html>
 
