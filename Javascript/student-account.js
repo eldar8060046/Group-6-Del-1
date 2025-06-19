@@ -90,4 +90,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch the account details when the page loads.
     fetchAccountDetails();
 });
-

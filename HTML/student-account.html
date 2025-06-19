@@ -9,7 +9,7 @@
 <body>
     <header>
         <a href="/">
-            <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" style="height: 50px;">
+            <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" class="logo">
         </a>
         <nav>
             <a href="/">Home</a>
@@ -37,7 +37,7 @@
                 </div>
                 <button type="submit" class="btn">Update Account</button>
             </form>
-            <p id="accountMessage" style="text-align: center; margin-top: 1rem;"></p>
+            <p id="accountMessage" class="message"></p>
         </section>
 
         <section class="form-container form-container-wide">
@@ -53,104 +53,14 @@
                 </div>
                 <button type="submit" class="btn">Change Password</button>
             </form>
-            <p id="passwordMessage" style="text-align: center; margin-top: 1rem;"></p>
+            <p id="passwordMessage" class="message"></p>
         </section>
     </main>
 
     <footer>
         <i>CSIT128 - Assignment 2 - Deliverable 1 - Group 6</i>
     </footer>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const user = JSON.parse(localStorage.getItem('user'));
-            if (!user || user.role !== 'student') {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            const accountForm = document.getElementById('accountForm');
-            const passwordForm = document.getElementById('passwordForm');
-            const accountMessage = document.getElementById('accountMessage');
-            const passwordMessage = document.getElementById('passwordMessage');
-            const logoutBtn = document.getElementById('logoutBtn');
-
-            logoutBtn.addEventListener('click', () => {
-                localStorage.removeItem('user');
-                window.location.href = 'login.html';
-            });
-            
-            async function fetchAccountDetails() {
-                try {
-                    const response = await fetch(`/account-details?userId=${user.id}&role=student`);
-                    if (!response.ok) throw new Error('Failed to fetch account');
-                    const data = await response.json();
-                    document.getElementById('firstName').value = data.first_name;
-                    document.getElementById('lastName').value = data.last_name;
-                    document.getElementById('email').value = data.email;
-                } catch (err) {
-                    accountMessage.textContent = 'Could not load account data.';
-                    accountMessage.style.color = 'red';
-                }
-            }
-
-            accountForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(accountForm);
-                const data = Object.fromEntries(formData.entries());
-                data.userId = user.id;
-                data.role = 'student';
-
-                try {
-                    const response = await fetch('/update-account', {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
-                    const result = await response.json();
-                    if (response.ok) {
-                        accountMessage.textContent = result.message;
-                        accountMessage.style.color = 'green';
-                    } else {
-                        accountMessage.textContent = result.message;
-                        accountMessage.style.color = 'red';
-                    }
-                } catch (err) {
-                    accountMessage.textContent = 'An error occurred.';
-                    accountMessage.style.color = 'red';
-                }
-            });
-
-            passwordForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(passwordForm);
-                const data = Object.fromEntries(formData.entries());
-                data.userId = user.id;
-                data.role = 'student';
-
-                 try {
-                    const response = await fetch('/update-password', {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
-                    const result = await response.json();
-                    if (response.ok) {
-                        passwordMessage.textContent = result.message;
-                        passwordMessage.style.color = 'green';
-                        passwordForm.reset();
-                    } else {
-                        passwordMessage.textContent = result.message;
-                        passwordMessage.style.color = 'red';
-                    }
-                } catch (err) {
-                    passwordMessage.textContent = 'An error occurred.';
-                    passwordMessage.style.color = 'red';
-                }
-            });
-            
-            fetchAccountDetails();
-        });
-    </script>
+    <!-- Link to the external JavaScript file -->
+    <script src="../Javascript/student-account.js"></script>
 </body>
 </html>
-
