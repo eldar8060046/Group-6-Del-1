@@ -11,8 +11,12 @@
         <a href="/">
             <img src="../Images/uowd_logo.png" alt="UOWD Internships Logo" class="logo">
         </a>
+        <!-- The navigation bar now includes all the standard links for a logged-in user -->
         <nav>
-            <a href="company-dashboard.html" class="btn">Back to Dashboard</a>
+            <a href="/">Home</a>
+            <a href="company-dashboard.html">Dashboard</a>
+            <a href="company-account.html">Account</a>
+            <button id="logoutBtn" class="btn btn-secondary">Logout</button>
         </nav>
     </header>
 
@@ -35,6 +39,7 @@
         <i>CSIT128 - Assignment 2 - Deliverable 1 - Group 6</i>
     </footer>
 
+    <!-- The JavaScript file remains the same, but it will now find the logoutBtn -->
     <script src="../Javascript/view-applicants.js"></script>
 </body>
 </html>
